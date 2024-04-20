@@ -33,7 +33,6 @@ NUMZIPS=4
 STARTCHUNK=0
 ENDCHUNK=
 NOUPDATE=0
-SYMLINK=""
 SKIPSAME=0
 IGNORE_ERR=0
 
@@ -108,9 +107,6 @@ while true; do
     -nu|--no-update)
         NOUPDATE=1
         ;;
-    -l|--symlink)
-        SYMLINK="-s"
-        ;;
     -ss|--skip-same)
         SKIPSAME=1
         ;;
@@ -167,10 +163,10 @@ while true; do
             rm "${TODAY}/${NEWDIR}/${NEWNAME}"
 
             if [[ $SKIPSAME -eq 0 ]]; then
-                ln -v "$SYMLINK" "${BASE}/${NEWDIR}/${NEWNAME}${ZEXT}" "${TODAY}/${NEWDIR}/${NEWNAME}${ZEXT}"
+                ln -v "${BASE}/${NEWDIR}/${NEWNAME}${ZEXT}" "${TODAY}/${NEWDIR}/${NEWNAME}${ZEXT}"
 
                 if [ ${DO_MD5} -eq 1 ]; then
-                    ln "$SYMLINK" "${BASE}/${NEWDIR}/${NEWNAME}.md5" "${TODAY}/${NEWDIR}/${NEWNAME}.md5"
+                    ln "${BASE}/${NEWDIR}/${NEWNAME}.md5" "${TODAY}/${NEWDIR}/${NEWNAME}.md5"
                 fi
             fi
         else
