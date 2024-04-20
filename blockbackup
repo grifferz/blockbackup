@@ -27,7 +27,7 @@ SOURCE=
 DEST=
 CHUNK=1M
 DO_MD5=1
-ZCAT=cat
+ZCAT="cat"
 ZEXT=
 NUMZIPS=4
 STARTCHUNK=0
@@ -61,12 +61,12 @@ while true; do
     case "$1" in
     -z|--zip)
         USE_ZIP=1
-        ZCAT=zcat
+        ZCAT="zcat"
         ZEXT=.gz
         ;;
     -za|--zip-after)
         USE_ZIP=2
-        ZCAT=zcat
+        ZCAT="zcat"
         ZEXT=.gz
         ;;
     -s|--source)
@@ -121,7 +121,7 @@ while true; do
     if [ -z "$1" ]; then break; fi
 done
 
-if [ -z "${SOURCE}" -o -z "${DEST}" ]; then usage; fi
+if [ -z "${SOURCE}" ] || [ -z "${DEST}" ]; then usage; fi
 if [[ $IGNORE_ERR -eq 1 ]] && [[ -z "$ENDCHUNK" ]]; then usage; fi
 
 
@@ -149,8 +149,9 @@ while true; do
     mkdir -p "${TODAY}/${NEWDIR}"
 
     #read chunk
-    dd if="${SOURCE}" of="${TODAY}/${NEWDIR}/${NEWNAME}" count=1 bs=${CHUNK} skip=${STARTCHUNK}  1>/dev/null 2>&1
+    dd if="${SOURCE}" of="${TODAY}/${NEWDIR}/${NEWNAME}" count=1 bs="${CHUNK}" skip=${STARTCHUNK}  1>/dev/null 2>&1
 
+    # shellcheck disable=SC2181
     if [ $? -ne 0 ] && [[ $IGNORE_ERR -eq 0 ]]; then
         # Error or eof
         echo "end of source or error"
@@ -179,7 +180,7 @@ while true; do
 
             if [ ${USE_ZIP} -eq 1 ]; then
                 # gzip this chunk immediatrely.
-                if [ $(jobs|wc -l) -lt ${NUMZIPS} ]; then
+                if [ "$(jobs|wc -l)" -lt ${NUMZIPS} ]; then
                     gzip -9 "${TODAY}/${NEWDIR}/${NEWNAME}" &
                 else
                     gzip -9 "${TODAY}/${NEWDIR}/${NEWNAME}"
@@ -187,7 +188,7 @@ while true; do
             fi
         fi
 
-        STARTCHUNK=$(( $STARTCHUNK+1 ))
+        STARTCHUNK=$(( STARTCHUNK+1 ))
         [ "${ENDCHUNK}" ] && [ ${STARTCHUNK} -gt ${ENDCHUNK} ] && break
     fi
 done
@@ -195,8 +196,8 @@ done
 if [ ${USE_ZIP} -eq 2 ]; then
     # gzip everything after.
     echo "zipping everything"
-    find "${TODAY}" -type f -regex '.*[0-9][0-9]$'|while read tozip; do
-    if [ $(jobs|wc -l) -le ${NUMZIPS} ]; then
+    find "${TODAY}" -type f -regex '.*[0-9][0-9]$'|while read -r tozip; do
+    if [ "$(jobs|wc -l)" -le ${NUMZIPS} ]; then
         gzip -9v "${tozip}" &
     else
         gzip -9v "${tozip}"
