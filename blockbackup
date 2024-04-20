@@ -26,7 +26,7 @@ USE_ZIP=0
 SOURCE=
 DEST=
 CHUNK=1M
-DO_MD5=1
+DO_XXH=1
 ZCAT="cat"
 ZEXT=
 NUMZIPS=4
@@ -45,7 +45,7 @@ function usage() {
     echo "    -za|--zip-after        compress new blocks at the end of process"
     echo "    -n|--num-zips N        run maximum N zip processess in parallel (default=4)"
     echo "    -c|--chunk N           set chunk size to N (default=1M)"
-    echo "    -nm|--no-md5           don't generate md5 for every chunk"
+    echo "    -nx|--no-xxh           don't generate xxhash128 for every chunk"
     echo "    -sc|--start-chunk N    start dump from chunk N (default=0)"
     echo "    -ec|--end-chunk N      end dump at chunk N (default=end of device)"
     echo "    -nu|--no-update        don't update lastsync link at the end"
@@ -89,8 +89,8 @@ while true; do
         shift
         CHUNK=$1
         ;;
-    -nm|--no-md5)
-        DO_MD5=0
+    -nx|--no-xxh)
+        DO_XXH=0
         ;;
     -n|--num-zips)
         shift
@@ -172,18 +172,18 @@ while true; do
                 ln -v "${BASE}/${NEWDIR}/${NEWNAME}${ZEXT}" \
                     "${TODAY}/${NEWDIR}/${NEWNAME}${ZEXT}"
 
-                if [ ${DO_MD5} -eq 1 ]; then
-                    ln "${BASE}/${NEWDIR}/${NEWNAME}.md5" \
-                        "${TODAY}/${NEWDIR}/${NEWNAME}.md5"
+                if [ ${DO_XXH} -eq 1 ]; then
+                    ln "${BASE}/${NEWDIR}/${NEWNAME}.xxh128" \
+                        "${TODAY}/${NEWDIR}/${NEWNAME}.xxh128"
                 fi
             fi
         else
             # Not the same - leave it.
             echo "new ${TODAY}/${NEWDIR}/${NEWNAME}"
 
-            if [ ${DO_MD5} -eq 1 ]; then
-                md5sum "${TODAY}/${NEWDIR}/${NEWNAME}" \
-                    > "${TODAY}/${NEWDIR}/${NEWNAME}.md5"
+            if [ ${DO_XXH} -eq 1 ]; then
+                xxh128sum "${TODAY}/${NEWDIR}/${NEWNAME}" \
+                    > "${TODAY}/${NEWDIR}/${NEWNAME}.xxh128"
             fi
 
             if [ ${USE_ZIP} -eq 1 ]; then
