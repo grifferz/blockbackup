@@ -133,7 +133,7 @@ TODAY=$(date +%F_%H%M%S)
 cd "${DEST}" || exit 1
 mkdir "${TODAY}"
 
-#base
+# Base.
 if [ -L lastsync ]; then
     BASE=$(readlink lastsync)
 else
@@ -141,15 +141,19 @@ else
 fi
 
 
-#START COPY
+# Start copy.
 while true; do
     NEWNAME=$(printf "%08d\n" $STARTCHUNK)
     echo -n "${NEWNAME} : "
     NEWDIR=${NEWNAME:0:5}
     mkdir -p "${TODAY}/${NEWDIR}"
 
-    #read chunk
-    dd if="${SOURCE}" of="${TODAY}/${NEWDIR}/${NEWNAME}" count=1 bs="${CHUNK}" skip=${STARTCHUNK}  1>/dev/null 2>&1
+    # Read a chunk.
+    dd if="${SOURCE}" \
+        of="${TODAY}/${NEWDIR}/${NEWNAME}" \
+        count=1 \
+        bs="${CHUNK}" \
+        skip=${STARTCHUNK}  1>/dev/null 2>&1
 
     # shellcheck disable=SC2181
     if [ $? -ne 0 ] && [[ $IGNORE_ERR -eq 0 ]]; then
@@ -157,17 +161,20 @@ while true; do
         echo "end of source or error"
         break
     else
-        ${ZCAT} "${BASE}/${NEWDIR}/${NEWNAME}${ZEXT}" 2>/dev/null|cmp "${TODAY}/${NEWDIR}/${NEWNAME}" 1>/dev/null 2>&1
+        ${ZCAT} "${BASE}/${NEWDIR}/${NEWNAME}${ZEXT}" 2>/dev/null \
+            | cmp "${TODAY}/${NEWDIR}/${NEWNAME}" 1>/dev/null 2>&1
 
         if [ $? -eq 0 ]; then
             # The same - remove and make hardlink to old one.
             rm "${TODAY}/${NEWDIR}/${NEWNAME}"
 
             if [[ $SKIPSAME -eq 0 ]]; then
-                ln -v "${BASE}/${NEWDIR}/${NEWNAME}${ZEXT}" "${TODAY}/${NEWDIR}/${NEWNAME}${ZEXT}"
+                ln -v "${BASE}/${NEWDIR}/${NEWNAME}${ZEXT}" \
+                    "${TODAY}/${NEWDIR}/${NEWNAME}${ZEXT}"
 
                 if [ ${DO_MD5} -eq 1 ]; then
-                    ln "${BASE}/${NEWDIR}/${NEWNAME}.md5" "${TODAY}/${NEWDIR}/${NEWNAME}.md5"
+                    ln "${BASE}/${NEWDIR}/${NEWNAME}.md5" \
+                        "${TODAY}/${NEWDIR}/${NEWNAME}.md5"
                 fi
             fi
         else
@@ -175,7 +182,8 @@ while true; do
             echo "new ${TODAY}/${NEWDIR}/${NEWNAME}"
 
             if [ ${DO_MD5} -eq 1 ]; then
-                md5sum "${TODAY}/${NEWDIR}/${NEWNAME}" >"${TODAY}/${NEWDIR}/${NEWNAME}.md5"
+                md5sum "${TODAY}/${NEWDIR}/${NEWNAME}" \
+                    > "${TODAY}/${NEWDIR}/${NEWNAME}.md5"
             fi
 
             if [ ${USE_ZIP} -eq 1 ]; then
@@ -196,7 +204,8 @@ done
 if [ ${USE_ZIP} -eq 2 ]; then
     # gzip everything after.
     echo "zipping everything"
-    find "${TODAY}" -type f -regex '.*[0-9][0-9]$'|while read -r tozip; do
+    find "${TODAY}" -type f -regex '.*[0-9][0-9]$' \
+        | while read -r tozip; do
         if [ "$(jobs|wc -l)" -le ${NUMZIPS} ]; then
             gzip -9v "${tozip}" &
         else
