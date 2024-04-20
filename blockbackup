@@ -197,11 +197,11 @@ if [ ${USE_ZIP} -eq 2 ]; then
     # gzip everything after.
     echo "zipping everything"
     find "${TODAY}" -type f -regex '.*[0-9][0-9]$'|while read -r tozip; do
-    if [ "$(jobs|wc -l)" -le ${NUMZIPS} ]; then
-        gzip -9v "${tozip}" &
-    else
-        gzip -9v "${tozip}"
-    fi
+        if [ "$(jobs|wc -l)" -le ${NUMZIPS} ]; then
+            gzip -9v "${tozip}" &
+        else
+            gzip -9v "${tozip}"
+        fi
     done
 fi
 
