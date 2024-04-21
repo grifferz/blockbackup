@@ -189,9 +189,9 @@ while true; do
             if [ ${USE_ZIP} -eq 1 ]; then
                 # gzip this chunk immediatrely.
                 if [ "$(jobs|wc -l)" -lt ${NUMZIPS} ]; then
-                    gzip -9 "${TODAY}/${NEWDIR}/${NEWNAME}" &
+                    gzip --fast "${TODAY}/${NEWDIR}/${NEWNAME}" &
                 else
-                    gzip -9 "${TODAY}/${NEWDIR}/${NEWNAME}"
+                    gzip --fast "${TODAY}/${NEWDIR}/${NEWNAME}"
                 fi
             fi
         fi
