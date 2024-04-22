@@ -138,7 +138,7 @@ if [ $FAST -eq 0 ]; then
 else
     # fast restore
     echo " wait a while to find all files in archive, next you can use 'killall -USR1 dd' to check progess"
-    find "$SOURCE" -type f -regextype posix-extended -regex ".*/[0-9]+/[0-9]+$ZEXT" -print|sort|xargs -n100 -r $ZCAT|dd of="$DEST" obs=$CHUNK
+    find "$SOURCE" -type f -regextype posix-extended -regex ".*/[0-9]+/[0-9]+$ZEXT" -print|sort|xargs -n100 -r $ZCAT|dd status=progress of="$DEST" obs=$CHUNK
 fi
 
 echo " end!"
