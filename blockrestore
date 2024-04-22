@@ -85,7 +85,7 @@ if [ -z "$SOURCE" -o -z "$DEST" ]; then usage; fi
 #### Some guessing
 
 # get first file in directory
-FIRSTFILE=$(find "$SOURCE" -type f -regextype posix-extended -regex ".*/[0-9]+/[0-9]+(\.gz)?" -print -quit)
+FIRSTFILE=$(find "$SOURCE" -type f -regextype posix-extended -regex ".*/[0-9]+/[0-9]+(\.zst)?" -print -quit)
 if [ -z "$FIRSTFILE" ]; then
     echo "ERROR: Couldn't find files matching archive"
     exit 1
@@ -94,14 +94,14 @@ fi
 echo "First file used to autodetect: $FIRSTFILE"
 
 # is gzipped?
-echo "$FIRSTFILE"|grep -q "\.gz$"
+echo "$FIRSTFILE"|grep -q "\.zst$"
 if [ $? -eq 0 ]; then
     USE_ZIP=1
-    ZEXT=.gz
-    ZCAT="zcat"
-    echo "Found gziped archive"
+    ZEXT=.zst
+    ZCAT="zstdcat"
+    echo "Found zstd archive"
 else
-    echo "It seems that archive is not gzipped"
+    echo "It seems that archive is not zstd"
 fi
 
 # chunk handling

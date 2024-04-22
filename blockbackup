@@ -29,7 +29,6 @@ CHUNK=1M
 DO_XXH=1
 ZCAT="cat"
 ZEXT=
-NUMZIPS=4
 STARTCHUNK=0
 ENDCHUNK=
 NOUPDATE=0
@@ -43,7 +42,6 @@ function usage() {
     echo "    -d|--dest directory    destination directory"
     echo "    -z|--zip               compress every block right after read/compare"
     echo "    -za|--zip-after        compress new blocks at the end of process"
-    echo "    -n|--num-zips N        run maximum N zip processess in parallel (default=4)"
     echo "    -c|--chunk N           set chunk size to N (default=1M)"
     echo "    -nx|--no-xxh           don't generate xxhash128 for every chunk"
     echo "    -sc|--start-chunk N    start dump from chunk N (default=0)"
@@ -61,13 +59,13 @@ while true; do
     case "$1" in
     -z|--zip)
         USE_ZIP=1
-        ZCAT="zcat"
-        ZEXT=.gz
+        ZCAT="zstdcat"
+        ZEXT=.zst
         ;;
     -za|--zip-after)
         USE_ZIP=2
-        ZCAT="zcat"
-        ZEXT=.gz
+        ZCAT="zstdcat"
+        ZEXT=.zst
         ;;
     -s|--source)
         shift
@@ -91,10 +89,6 @@ while true; do
         ;;
     -nx|--no-xxh)
         DO_XXH=0
-        ;;
-    -n|--num-zips)
-        shift
-        NUMZIPS=$(($1))
         ;;
     -sc|--start-chunk)
         shift
@@ -124,6 +118,23 @@ done
 if [ -z "${SOURCE}" ] || [ -z "${DEST}" ]; then usage; fi
 if [[ $IGNORE_ERR -eq 1 ]] && [[ -z "$ENDCHUNK" ]]; then usage; fi
 
+if [[ $USE_ZIP -ne 0 ]]; then
+    if [ -z "$ZSTD_CLEVEL" ]; then
+        echo "Using default compression level 3; set ZSTD_CLEVEL to change"
+    else
+        echo "Using compression level $ZSTD_CLEVEL as requested"
+    fi
+
+    if [ -z "$ZSTD_NBTHREADS" ]; then
+        echo "Using default single-threaded compression; set ZSTD_NBTHREADS to change"
+    else
+        if [[ $ZSTD_NBTHREADS -eq 0 ]]; then
+            echo "Detecting number of compression threads as requested"
+        else
+            echo "Using $ZSTD_NBTHREADS compression thread(s) as requested"
+        fi
+    fi
+fi
 
 echo "Doing incremental backup of device ${SOURCE} to directory ${DEST} with chunk size ${CHUNK}"
 
@@ -187,12 +198,8 @@ while true; do
             fi
 
             if [ ${USE_ZIP} -eq 1 ]; then
-                # gzip this chunk immediatrely.
-                if [ "$(jobs|wc -l)" -lt ${NUMZIPS} ]; then
-                    gzip --fast "${TODAY}/${NEWDIR}/${NEWNAME}" &
-                else
-                    gzip --fast "${TODAY}/${NEWDIR}/${NEWNAME}"
-                fi
+                # zstd this chunk immediately.
+                zstd --rm --quiet "${TODAY}/${NEWDIR}/${NEWNAME}"
             fi
         fi
 
@@ -202,18 +209,14 @@ while true; do
 done
 
 if [ ${USE_ZIP} -eq 2 ]; then
-    # gzip everything after.
+    # zstd everything after.
     echo "zipping everything"
-    find "${TODAY}" -type f -regex '.*[0-9][0-9]$' \
-        | while read -r tozip; do
-        if [ "$(jobs|wc -l)" -le ${NUMZIPS} ]; then
-            gzip -9v "${tozip}" &
-        else
-            gzip -9v "${tozip}"
-        fi
+    find "${TODAY}" -type f -regex '.*[0-9][0-9][0-9][0-9]$' \
+        | sort | while read -r tozip; do
+        echo "	${tozip}"
+        zstd --rm --quiet "${tozip}"
     done
 fi
-
 
 # Update lastsync link.
 if [ ${NOUPDATE} -eq 0 ]; then
