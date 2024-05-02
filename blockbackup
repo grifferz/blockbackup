@@ -37,7 +37,7 @@ IGNORE_ERR=0
 
 function usage() {
     echo "ERROR: unknown option/paramter"
-    echo "Usage: blockbackup -s device -d directory [-z|-za] [-n num_zips] [-c chunk] [-mn] [-sc start] [-se end] [-nu] [-l] [-ss] [-ie]"
+    echo "Usage: blockbackup -s device -d directory [-z|-za] [-c chunk] [-nx] [-sc start] [-se end] [-nu] [-l] [-ss] [-ie]"
     echo "    -s|--source device     source device"
     echo "    -d|--dest directory    destination directory"
     echo "    -z|--zip               compress every block right after read/compare"
