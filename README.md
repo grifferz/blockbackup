@@ -86,7 +86,7 @@ __Blockrestore__:
 
 ## blockbackup
 
-    blockbackup -s device -d directory [-z|-za] [-c chunk] [-nx]
+    blockbackup -s device -d directory [-z|-za] [-c chunk] [-nx] [-nu] [-np]
 
 ### `-s|--source`
 Source device.
@@ -119,6 +119,12 @@ End dump at chunk N of device. Default is to dump the whole of the device.
 
 ### `-nu|--no-update`
 Don't update *lastsync* link at the end.
+
+### `-np|--no-progress`
+Don't report progress of long-running operations such as linking and
+compression. With a 1MiB chunk size a 1GiB block result will otherwise result
+in 1,000 lines of output for dumping out the black and ossibly another 1,000
+lines for compression.
 
 ### `-ie|--ignore-errors`
 Don't stop on errors while reading the device. While using this option we won't

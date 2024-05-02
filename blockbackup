@@ -32,12 +32,13 @@ ZEXT=
 STARTCHUNK=0
 ENDCHUNK=
 NOUPDATE=0
+NOPROGRESS=0
 SKIPSAME=0
 IGNORE_ERR=0
 
 function usage() {
     echo "ERROR: unknown option/paramter"
-    echo "Usage: blockbackup -s device -d directory [-z|-za] [-c chunk] [-nx] [-sc start] [-se end] [-nu] [-l] [-ss] [-ie]"
+    echo "Usage: blockbackup -s device -d directory [-z|-za] [-c chunk] [-nx] [-sc start] [-se end] [-nu] [-l] [-ss] [-ie] [-np]"
     echo "    -s|--source device     source device"
     echo "    -d|--dest directory    destination directory"
     echo "    -z|--zip               compress every block right after read/compare"
@@ -47,6 +48,7 @@ function usage() {
     echo "    -sc|--start-chunk N    start dump from chunk N (default=0)"
     echo "    -ec|--end-chunk N      end dump at chunk N (default=end of device)"
     echo "    -nu|--no-update        don't update lastsync link at the end"
+    echo "    -np|--no-progress      don't print progress of long-running operations"
     echo "    -l|--symlink           use symbolic links instead of hard links"
     echo "    -ss|--skip-same        don't put link if reference chunk is the same"
     echo "    -ie|--ignore-errors    don't stop on dd errors, must be used with --end-chunk"
@@ -100,6 +102,9 @@ while true; do
         ;;
     -nu|--no-update)
         NOUPDATE=1
+        ;;
+    -np|--no-progress)
+        NOPROGRESS=1
         ;;
     -ss|--skip-same)
         SKIPSAME=1
@@ -155,7 +160,11 @@ fi
 # Start copy.
 while true; do
     NEWNAME=$(printf "%08d\n" $STARTCHUNK)
-    echo -n "${NEWNAME} : "
+
+    if [[ $NOPROGRESS -eq 0 ]]; then
+        echo -n "${NEWNAME} : "
+    fi
+
     NEWDIR=${NEWNAME:0:5}
     mkdir -p "${TODAY}/${NEWDIR}"
 
@@ -179,9 +188,18 @@ while true; do
             # The same - remove and make hardlink to old one.
             rm "${TODAY}/${NEWDIR}/${NEWNAME}"
 
+            # Build argumetns for first "ln" as a bash array so that there can
+            # optionally be a "-v".
+            unset ln_args
+
+            if [[ $NOPROGRESS -eq 0 ]]; then
+                ln_args+=("-v")
+            fi
+
             if [[ $SKIPSAME -eq 0 ]]; then
-                ln -v "${BASE}/${NEWDIR}/${NEWNAME}${ZEXT}" \
-                    "${TODAY}/${NEWDIR}/${NEWNAME}${ZEXT}"
+                ln_args+=("${BASE}/${NEWDIR}/${NEWNAME}${ZEXT}")
+                ln_args+=("${TODAY}/${NEWDIR}/${NEWNAME}${ZEXT}")
+                ln "${ln_args[@]}"
 
                 if [ ${DO_XXH} -eq 1 ]; then
                     ln "${BASE}/${NEWDIR}/${NEWNAME}.xxh128" \
@@ -190,7 +208,9 @@ while true; do
             fi
         else
             # Not the same - leave it.
-            echo "new ${TODAY}/${NEWDIR}/${NEWNAME}"
+            if [[ $NOPROGRESS -eq 0 ]]; then
+                echo "new ${TODAY}/${NEWDIR}/${NEWNAME}"
+            fi
 
             if [ ${DO_XXH} -eq 1 ]; then
                 xxh128sum "${TODAY}/${NEWDIR}/${NEWNAME}" \
@@ -213,7 +233,9 @@ if [ ${USE_ZIP} -eq 2 ]; then
     echo "zipping everything"
     find "${TODAY}" -type f -regex '.*[0-9][0-9][0-9][0-9]$' \
         | sort | while read -r tozip; do
-        echo "	${tozip}"
+        if [[ $NOPROGRESS -eq 0 ]]; then
+            echo "	${tozip}"
+        fi
         zstd --rm --quiet "${tozip}"
     done
 fi
